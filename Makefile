@@ -11,11 +11,6 @@ LUCI_PKGARCH:=all
 
 include $(TOPDIR)/feeds/luci/luci.mk
 
-define Package/$(PKG_NAME)/install
-	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) $(CURDIR)/root/etc/init.d/singbox-lite $(1)/etc/init.d/singbox-lite
-endef
-
 define Package/luci-app-singbox-lite/postinst
 #!/bin/sh
 [ -n "$$IPKG_INSTROOT" ] || { mkdir -p /etc/sing-box/profiles; touch /var/log/sing-box-lite.log; /etc/init.d/singbox-lite enable; }
