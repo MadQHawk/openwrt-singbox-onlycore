@@ -1,0 +1,4 @@
+config singbox 'main'
+	option enabled '0'
+	option config_file ''
+	option start_delay '0'
