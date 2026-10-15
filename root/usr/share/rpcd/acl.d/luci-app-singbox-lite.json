@@ -1,0 +1,7 @@
+{
+  "luci-app-singbox-lite": {
+    "description": "Manage sing-box Lite",
+    "read": { "uci": ["singbox-lite"], "file": { "/etc/sing-box/profiles/": ["list", "read"], "/var/log/sing-box-lite.log": ["read"] } },
+    "write": { "uci": ["singbox-lite"], "file": { "/etc/sing-box/profiles/": ["write", "remove"], "/var/log/sing-box-lite.log": ["write"] }, "ubus": { "file": ["exec"] } }
+  }
+}
