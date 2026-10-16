@@ -1,13 +1,23 @@
 include $(TOPDIR)/rules.mk
 
-LUCI_NAME:=luci-app-singbox-lite
-LUCI_TITLE:=Minimal sing-box LuCI Controller
-LUCI_DEPENDS:=+luci-base +sing-box
-LUCI_PKGARCH:=all
-
+PKG_NAME:=luci-app-singbox-lite
 PKG_VERSION:=0.1.0
 PKG_RELEASE:=1
 PKG_LICENSE:=GPL-3.0-only
+
+include $(INCLUDE_DIR)/package.mk
+
+define Package/luci-app-singbox-lite
+  SECTION:=luci
+  CATEGORY:=LuCI
+  TITLE:=Minimal sing-box LuCI Controller
+  PKGARCH:=all
+  EXTRA_DEPENDS:=luci-base sing-box
+endef
+
+define Package/luci-app-singbox-lite/description
+  Minimal LuCI controller for sing-box.
+endef
 
 define Package/luci-app-singbox-lite/postinst
 #!/bin/sh
@@ -15,6 +25,12 @@ define Package/luci-app-singbox-lite/postinst
 exit 0
 endef
 
-include $(TOPDIR)/feeds/luci/luci.mk
+define Package/luci-app-singbox-lite/install
+	$(INSTALL_DIR) $(1)/www
+	$(CP) ./htdocs/. $(1)/www/
+	$(CP) ./root/. $(1)/
+endef
+
+$(eval $(call BuildPackage,luci-app-singbox-lite))
 
 # call BuildPackage - OpenWrt buildroot signature
