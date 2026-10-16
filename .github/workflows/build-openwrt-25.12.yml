@@ -20,6 +20,14 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Determine package version
+        id: package-meta
+        shell: bash
+        run: |
+          PKG_VERSION="$(sed -n 's/^PKG_VERSION:=//p' Makefile)"
+          PKG_RELEASE="$(sed -n 's/^PKG_RELEASE:=//p' Makefile)"
+          echo "artifact_name=luci-app-singbox-lite-openwrt-25.12.5-x86-64-${PKG_VERSION}-r${PKG_RELEASE}" >> "$GITHUB_OUTPUT"
+
       - name: Download and verify OpenWrt SDK
         run: |
           SDK_URL='https://downloads.openwrt.org/releases/25.12.5/targets/x86/64/openwrt-sdk-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst'
@@ -67,7 +75,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: luci-app-singbox-lite-openwrt-25.12.5-x86-64
+          name: ${{ steps.package-meta.outputs.artifact_name }}
           path: artifacts/*.apk
           if-no-files-found: error
           retention-days: 30
