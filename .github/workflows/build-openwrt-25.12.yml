@@ -36,6 +36,7 @@ jobs:
           ./scripts/feeds install -p luci luci-base
           mkdir -p package/feeds/custom
           ln -s "$GITHUB_WORKSPACE" package/feeds/custom/luci-app-singbox-lite
+          echo 'CONFIG_PACKAGE_luci-app-singbox-lite=m' >> .config
           make defconfig
           make package/feeds/custom/luci-app-singbox-lite/compile V=s
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
