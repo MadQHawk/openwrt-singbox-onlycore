@@ -12,7 +12,7 @@ define Package/luci-app-singbox-lite
   CATEGORY:=LuCI
   TITLE:=Minimal sing-box LuCI Controller
   PKGARCH:=all
-  EXTRA_DEPENDS:=luci-base sing-box
+  EXTRA_DEPENDS:=luci-base,sing-box
 endef
 
 define Package/luci-app-singbox-lite/description
