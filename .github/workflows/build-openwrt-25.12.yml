@@ -33,12 +33,14 @@ jobs:
           SDK_DIR="$RUNNER_TEMP/openwrt-sdk"
           FEED_DIR="$RUNNER_TEMP/singbox-feed"
           PACKAGE_DIR="$FEED_DIR/luci-app-singbox-lite"
+          cd "$SDK_DIR"
+          ./scripts/feeds update luci
           mkdir -p "$PACKAGE_DIR"
+          cp feeds/luci/luci.mk "$FEED_DIR/luci.mk"
           cp "$GITHUB_WORKSPACE/Makefile" "$GITHUB_WORKSPACE/README.md" "$PACKAGE_DIR/"
           cp -a "$GITHUB_WORKSPACE/htdocs" "$GITHUB_WORKSPACE/root" "$PACKAGE_DIR/"
-          cd "$SDK_DIR"
           printf '\nsrc-link singbox_onlycore %s\n' "$FEED_DIR" >> feeds.conf.default
-          ./scripts/feeds update luci singbox_onlycore
+          ./scripts/feeds update singbox_onlycore
           ./scripts/feeds install -p luci luci-base
           ./scripts/feeds install -p singbox_onlycore luci-app-singbox-lite
           grep -q 'CONFIG_PACKAGE_luci-app-singbox-lite' tmp/.config-package.in
