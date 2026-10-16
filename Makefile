@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-singbox-lite
 PKG_VERSION:=0.1.0
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 PKG_LICENSE:=GPL-3.0-only
 
 include $(INCLUDE_DIR)/package.mk
@@ -32,6 +32,7 @@ define Package/luci-app-singbox-lite/install
 	$(INSTALL_DIR) $(1)/www
 	$(CP) ./htdocs/. $(1)/www/
 	$(CP) ./root/. $(1)/
+	$(INSTALL_BIN) ./root/etc/init.d/singbox-lite $(1)/etc/init.d/singbox-lite
 endef
 
 $(eval $(call BuildPackage,luci-app-singbox-lite))
