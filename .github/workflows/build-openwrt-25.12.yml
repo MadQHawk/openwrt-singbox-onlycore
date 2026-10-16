@@ -31,21 +31,24 @@ jobs:
       - name: Register package and compile
         run: |
           SDK_DIR="$RUNNER_TEMP/openwrt-sdk"
-          PACKAGE_DIR="$SDK_DIR/package/luci-app-singbox-lite"
+          LOCAL_FEED_DIR="$RUNNER_TEMP/local-feed"
+          PACKAGE_DIR="$LOCAL_FEED_DIR/luci-app-singbox-lite"
           cd "$SDK_DIR"
-          ./scripts/feeds update luci
           mkdir -p "$PACKAGE_DIR"
           cp "$GITHUB_WORKSPACE/Makefile" "$GITHUB_WORKSPACE/README.md" "$PACKAGE_DIR/"
           cp -a "$GITHUB_WORKSPACE/htdocs" "$GITHUB_WORKSPACE/root" "$PACKAGE_DIR/"
+          echo "src-link local $LOCAL_FEED_DIR" >> feeds.conf.default
+          ./scripts/feeds update luci local
           ./scripts/feeds install -p luci luci-base
+          ./scripts/feeds install -p local luci-app-singbox-lite
           echo 'CONFIG_PACKAGE_luci-app-singbox-lite=m' >> .config
           make defconfig
           if ! grep -q '^CONFIG_PACKAGE_luci-app-singbox-lite=m$' .config; then
-            echo "::error::CONFIG_PACKAGE_luci-app-singbox-lite was not generated; inspect the package Makefile and SDK package scan."
+            echo "::error::CONFIG_PACKAGE_luci-app-singbox-lite was not generated; inspect the local feed package metadata."
             grep -n 'singbox-lite' tmp/.config-package.in || true
             exit 1
           fi
-          make package/luci-app-singbox-lite/compile V=s
+          make package/feeds/local/luci-app-singbox-lite/compile V=s
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
           find bin/packages -type f -name 'luci-app-singbox-lite*.apk' -exec cp {} "$GITHUB_WORKSPACE/artifacts/" +
           test -n "$(find "$GITHUB_WORKSPACE/artifacts" -type f -name '*.apk' -print -quit)"
