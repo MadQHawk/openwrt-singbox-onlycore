@@ -28,19 +28,24 @@ jobs:
           mkdir -p "$RUNNER_TEMP/openwrt-sdk"
           tar --zstd -xf "$RUNNER_TEMP/openwrt-sdk.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/openwrt-sdk"
 
-      - name: Prepare LuCI feed and compile package
+      - name: Register local feed and compile package
         run: |
           SDK_DIR="$RUNNER_TEMP/openwrt-sdk"
-          cd "$SDK_DIR"
-          ./scripts/feeds update luci
-          ./scripts/feeds install -p luci luci-base
-          PACKAGE_DIR="$SDK_DIR/package/luci-app-singbox-lite"
+          FEED_DIR="$RUNNER_TEMP/singbox-feed"
+          PACKAGE_DIR="$FEED_DIR/luci-app-singbox-lite"
           mkdir -p "$PACKAGE_DIR"
           cp "$GITHUB_WORKSPACE/Makefile" "$GITHUB_WORKSPACE/README.md" "$PACKAGE_DIR/"
           cp -a "$GITHUB_WORKSPACE/htdocs" "$GITHUB_WORKSPACE/root" "$PACKAGE_DIR/"
+          cd "$SDK_DIR"
+          printf '\nsrc-link singbox_onlycore %s\n' "$FEED_DIR" >> feeds.conf.default
+          ./scripts/feeds update luci singbox_onlycore
+          ./scripts/feeds install -p luci luci-base
+          ./scripts/feeds install -p singbox_onlycore luci-app-singbox-lite
+          grep -q 'CONFIG_PACKAGE_luci-app-singbox-lite' tmp/.config-package.in
           echo 'CONFIG_PACKAGE_luci-app-singbox-lite=m' >> .config
           make defconfig
-          make package/luci-app-singbox-lite/compile V=s
+          grep -q '^CONFIG_PACKAGE_luci-app-singbox-lite=m$' .config
+          make package/feeds/singbox_onlycore/luci-app-singbox-lite/compile V=s
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
           find bin/packages -type f -name 'luci-app-singbox-lite*.apk' -exec cp {} "$GITHUB_WORKSPACE/artifacts/" +
           test -n "$(find "$GITHUB_WORKSPACE/artifacts" -type f -name '*.apk' -print -quit)"
