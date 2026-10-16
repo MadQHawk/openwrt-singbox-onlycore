@@ -33,12 +33,12 @@ jobs:
           SDK_DIR="$RUNNER_TEMP/openwrt-sdk"
           cd "$SDK_DIR"
           CUSTOM_FEED="$RUNNER_TEMP/custom-feed"
-          PACKAGE_DIR="$CUSTOM_FEED/luci-app-singbox-lite"
+          PACKAGE_DIR="$CUSTOM_FEED/packages/luci-app-singbox-lite"
           mkdir -p "$PACKAGE_DIR"
           cp "$GITHUB_WORKSPACE/Makefile" "$GITHUB_WORKSPACE/README.md" "$PACKAGE_DIR/"
           cp -a "$GITHUB_WORKSPACE/htdocs" "$GITHUB_WORKSPACE/root" "$PACKAGE_DIR/"
           echo "src-link custom $CUSTOM_FEED" >> feeds.conf
-          ./scripts/feeds update luci custom
+          ./scripts/feeds update -a
           ./scripts/feeds install -p luci luci-base
           ./scripts/feeds install -p custom luci-app-singbox-lite
           make defconfig
