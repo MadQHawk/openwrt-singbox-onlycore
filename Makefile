@@ -15,4 +15,4 @@ define Package/luci-app-singbox-lite/postinst
 exit 0
 endef
 
-include ../../luci.mk
+include $(TOPDIR)/feeds/luci/luci.mk
