@@ -28,18 +28,16 @@ jobs:
           mkdir -p "$RUNNER_TEMP/openwrt-sdk"
           tar --zstd -xf "$RUNNER_TEMP/openwrt-sdk.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/openwrt-sdk"
 
-      - name: Register package in LuCI feed and compile
+      - name: Register package and compile
         run: |
           SDK_DIR="$RUNNER_TEMP/openwrt-sdk"
-          PACKAGE_DIR="$SDK_DIR/feeds/luci/applications/luci-app-singbox-lite"
+          PACKAGE_DIR="$SDK_DIR/package/feeds/luci/luci-app-singbox-lite"
           cd "$SDK_DIR"
           ./scripts/feeds update luci
           mkdir -p "$PACKAGE_DIR"
           cp "$GITHUB_WORKSPACE/Makefile" "$GITHUB_WORKSPACE/README.md" "$PACKAGE_DIR/"
           cp -a "$GITHUB_WORKSPACE/htdocs" "$GITHUB_WORKSPACE/root" "$PACKAGE_DIR/"
-          ./scripts/feeds update luci
-          ./scripts/feeds install -p luci luci-base luci-app-singbox-lite
-          grep -q 'CONFIG_PACKAGE_luci-app-singbox-lite' tmp/.config-package.in
+          ./scripts/feeds install -p luci luci-base
           echo 'CONFIG_PACKAGE_luci-app-singbox-lite=m' >> .config
           make defconfig
           grep -q '^CONFIG_PACKAGE_luci-app-singbox-lite=m$' .config
