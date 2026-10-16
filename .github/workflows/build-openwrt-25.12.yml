@@ -31,16 +31,15 @@ jobs:
       - name: Register package and compile
         run: |
           SDK_DIR="$RUNNER_TEMP/openwrt-sdk"
-          PACKAGE_DIR="$RUNNER_TEMP/luci-app-singbox-lite"
+          PACKAGE_DIR="$SDK_DIR/package/feeds/luci/luci-app-singbox-lite"
           cd "$SDK_DIR"
-          mkdir -p "$PACKAGE_DIR" package/feeds/local
+          ./scripts/feeds update luci
+          mkdir -p "$PACKAGE_DIR"
           cp "$GITHUB_WORKSPACE/Makefile" "$GITHUB_WORKSPACE/README.md" "$PACKAGE_DIR/"
           cp -a "$GITHUB_WORKSPACE/htdocs" "$GITHUB_WORKSPACE/root" "$PACKAGE_DIR/"
-          ln -s "$PACKAGE_DIR" package/feeds/local/luci-app-singbox-lite
-          ./scripts/feeds update luci
           ./scripts/feeds install -p luci luci-base
           make defconfig
-          make package/feeds/local/luci-app-singbox-lite/compile V=s
+          make package/feeds/luci/luci-app-singbox-lite/compile V=s
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
           find bin/packages -type f -name 'luci-app-singbox-lite*.apk' -exec cp {} "$GITHUB_WORKSPACE/artifacts/" +
           test -n "$(find "$GITHUB_WORKSPACE/artifacts" -type f -name '*.apk' -print -quit)"
