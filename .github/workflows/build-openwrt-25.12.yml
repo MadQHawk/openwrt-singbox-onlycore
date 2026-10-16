@@ -32,14 +32,17 @@ jobs:
         run: |
           SDK_DIR="$RUNNER_TEMP/openwrt-sdk"
           cd "$SDK_DIR"
-          ./scripts/feeds update luci
-          ./scripts/feeds install -p luci luci-base
-          PACKAGE_DIR="$SDK_DIR/package/luci-app-singbox-lite"
+          CUSTOM_FEED="$RUNNER_TEMP/custom-feed"
+          PACKAGE_DIR="$CUSTOM_FEED/luci-app-singbox-lite"
           mkdir -p "$PACKAGE_DIR"
           cp "$GITHUB_WORKSPACE/Makefile" "$GITHUB_WORKSPACE/README.md" "$PACKAGE_DIR/"
           cp -a "$GITHUB_WORKSPACE/htdocs" "$GITHUB_WORKSPACE/root" "$PACKAGE_DIR/"
+          echo "src-link custom $CUSTOM_FEED" >> feeds.conf
+          ./scripts/feeds update luci custom
+          ./scripts/feeds install -p luci luci-base
+          ./scripts/feeds install -p custom luci-app-singbox-lite
           make defconfig
-          make package/luci-app-singbox-lite/compile V=s
+          make package/feeds/custom/luci-app-singbox-lite/compile V=s
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
           find bin/packages -type f -name 'luci-app-singbox-lite*.apk' -exec cp {} "$GITHUB_WORKSPACE/artifacts/" +
           test -n "$(find "$GITHUB_WORKSPACE/artifacts" -type f -name '*.apk' -print -quit)"
