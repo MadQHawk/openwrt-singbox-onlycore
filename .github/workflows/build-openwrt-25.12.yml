@@ -40,6 +40,10 @@ jobs:
           cp -a "$GITHUB_WORKSPACE/htdocs" "$GITHUB_WORKSPACE/root" "$PACKAGE_DIR/"
           echo "src-link custom $LOCAL_FEED_DIR" >> feeds.conf.default
           ./scripts/feeds update luci packages custom
+          if ! grep -q "^Package: $PACKAGE_NAME$" feeds/custom.index; then
+            echo "::error::The SDK feed scanner did not index $PACKAGE_NAME."
+            exit 1
+          fi
           ./scripts/feeds install -p packages sing-box
           ./scripts/feeds install -p luci luci-base
           ./scripts/feeds install -p custom "$PACKAGE_NAME"
