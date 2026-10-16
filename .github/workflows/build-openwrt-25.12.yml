@@ -36,11 +36,11 @@ jobs:
           PACKAGE_LINK="$SDK_DIR/package/feeds/luci/$PACKAGE_NAME"
           cd "$SDK_DIR"
           ./scripts/feeds update luci
+          ./scripts/feeds install -p luci luci-base
           mkdir -p "$PACKAGE_SOURCE" "$SDK_DIR/package/feeds/luci"
           cp "$GITHUB_WORKSPACE/Makefile" "$GITHUB_WORKSPACE/README.md" "$PACKAGE_SOURCE/"
           cp -a "$GITHUB_WORKSPACE/htdocs" "$GITHUB_WORKSPACE/root" "$PACKAGE_SOURCE/"
           ln -s "../../../feeds/luci/applications/$PACKAGE_NAME" "$PACKAGE_LINK"
-          ./scripts/feeds install -p luci luci-base
           make defconfig
           make "package/feeds/luci/$PACKAGE_NAME/compile" V=s
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
