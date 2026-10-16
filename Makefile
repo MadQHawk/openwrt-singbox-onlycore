@@ -25,6 +25,9 @@ define Package/luci-app-singbox-lite/postinst
 exit 0
 endef
 
+define Build/Compile
+endef
+
 define Package/luci-app-singbox-lite/install
 	$(INSTALL_DIR) $(1)/www
 	$(CP) ./htdocs/. $(1)/www/
