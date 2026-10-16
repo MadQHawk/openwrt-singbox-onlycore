@@ -39,13 +39,11 @@ jobs:
           cp "$GITHUB_WORKSPACE/Makefile" "$GITHUB_WORKSPACE/README.md" "$PACKAGE_DIR/"
           cp -a "$GITHUB_WORKSPACE/htdocs" "$GITHUB_WORKSPACE/root" "$PACKAGE_DIR/"
           echo "src-link custom $LOCAL_FEED_DIR" >> feeds.conf.default
-          ./scripts/feeds update luci packages custom
+          ./scripts/feeds update custom
           if ! grep -q "^Package: $PACKAGE_NAME$" feeds/custom.index; then
             echo "::error::The SDK feed scanner did not index $PACKAGE_NAME."
             exit 1
           fi
-          ./scripts/feeds install -p packages sing-box
-          ./scripts/feeds install -p luci luci-base
           ./scripts/feeds install -p custom "$PACKAGE_NAME"
           echo "CONFIG_PACKAGE_$PACKAGE_NAME=m" >> .config
           make defconfig
