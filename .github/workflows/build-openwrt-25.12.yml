@@ -32,7 +32,7 @@ jobs:
         run: |
           SDK_DIR="$RUNNER_TEMP/openwrt-sdk"
           FEED_DIR="$RUNNER_TEMP/singbox-feed"
-          PACKAGE_DIR="$FEED_DIR/luci-app-singbox-lite"
+          PACKAGE_DIR="$FEED_DIR/applications/luci-app-singbox-lite"
           cd "$SDK_DIR"
           ./scripts/feeds update luci
           mkdir -p "$PACKAGE_DIR"
