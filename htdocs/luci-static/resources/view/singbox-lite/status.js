@@ -14,7 +14,7 @@ return view.extend({
 		return Promise.all([
 			uci.load('singbox-lite'),
 			fs.exec('/etc/init.d/singbox-lite', ['running']).catch(function () { return { code: 1 }; }),
-			fs.exec('/usr/bin/sing-box', ['version']).catch(function () { return { stdout: _('未安装'), code: 1 }; })
+			fs.exec('/etc/init.d/singbox-lite', ['version']).catch(function () { return { stdout: _('未安装'), code: 1 }; })
 		]);
 	},
 	render: function (data) {
@@ -31,7 +31,7 @@ return view.extend({
 		o.cfgvalue = function () { return data[1].code === 0 ? _('运行中') : _('未运行'); };
 
 		o = s.option(form.Button, '_reload'); o.inputtitle = _('重载服务'); o.inputstyle = 'apply';
-		o.onclick = function () { return fs.exec('/etc/init.d/singbox-lite', ['reload']).then(function () { window.location.reload(); }).catch(notifyError); };
+		o.onclick = function () { return fs.exec('/etc/init.d/singbox-lite', ['restart']).then(function () { window.location.reload(); }).catch(notifyError); };
 		o = s.option(form.Button, '_restart'); o.inputtitle = _('重启服务'); o.inputstyle = 'reset';
 		o.onclick = function () { return fs.exec('/etc/init.d/singbox-lite', ['restart']).then(function () { window.location.reload(); }).catch(notifyError); };
 		o = s.option(form.Button, '_update_dashboard'); o.inputtitle = _('更新面板'); o.inputstyle = 'apply';
