@@ -1,13 +1,9 @@
-# luci-app-singbox-lite
+# OpenWrt sing-box Core Only
 
-极简 OpenWrt LuCI 插件，仅管理 sing-box 内核，包含“插件配置”“配置文件”“日志”三个页面，不实现透明代理、防火墙或策略路由功能。
+This repository contains an independently maintained, core-only adaptation of [OpenWrt Momo](https://github.com/nikkinikki-org/OpenWrt-momo).
 
-## 使用
+It keeps Momo's LuCI status, profile upload/editor, logs, configuration checks, service controls, dashboard controls, and scheduled restart. Transparent proxy and mixin pages are removed. Core-only mode is enabled by default and enforced by the service.
 
-安装 `sing-box` 与本插件。上传配置至 `/etc/sing-box/profiles/`，然后在 LuCI 的“服务 → sing-box Lite”选择配置并启用。服务通过 procd 管理，并在启动前执行 `sing-box check`。
+The package targets OpenWrt 25.12.5 x86_64 and depends on the device's existing sing-box package. This source is based on Momo 1.2.2 / 2026.10.14.
 
-配置：`/etc/config/singbox-lite`  
-日志：`/var/log/sing-box-lite.log`  
-服务：`/etc/init.d/singbox-lite`
-
-当前是源码初版，尚未针对具体 OpenWrt SDK 编译验证。
+Momo is licensed under GPL-3.0. See [LICENSE](LICENSE) and retain upstream copyright notices.

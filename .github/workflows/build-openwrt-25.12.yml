@@ -1,13 +1,14 @@
-name: Build OpenWrt 25.12.5 APK
+name: Build OpenWrt 25.12.5 Core APK
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - Makefile
-      - htdocs/**
-      - root/**
+      - README*
+      - LICENSE
+      - momo/**
+      - luci-app-momo/**
       - .github/workflows/build-openwrt-25.12.yml
 
 permissions:
@@ -19,20 +20,19 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-
-      - name: Determine package version
+      - name: Determine package versions
         id: package-meta
         shell: bash
         run: |
-          PKG_VERSION="$(sed -n 's/^PKG_VERSION:=//p' Makefile)"
-          PKG_RELEASE="$(sed -n 's/^PKG_RELEASE:=//p' Makefile)"
-          echo "artifact_name=luci-app-singbox-lite-openwrt-25.12.5-x86-64-${PKG_VERSION}-r${PKG_RELEASE}" >> "$GITHUB_OUTPUT"
-
+          APP_VERSION="$(sed -n 's/^PKG_VERSION:=//p' luci-app-momo/Makefile)"
+          APP_RELEASE="$(sed -n 's/^PKG_RELEASE:=//p' luci-app-momo/Makefile)"
+          CORE_VERSION="$(sed -n 's/^PKG_VERSION:=//p' momo/Makefile)"
+          CORE_RELEASE="$(sed -n 's/^PKG_RELEASE:=//p' momo/Makefile)"
+          echo "artifact_name=singbox-core-only-openwrt-25.12.5-x86-64-app-${APP_VERSION}-r${APP_RELEASE:-1}-momo-${CORE_VERSION}-r${CORE_RELEASE}" >> "$GITHUB_OUTPUT"
       - name: Check source syntax
         run: |
-          sh -n root/etc/init.d/singbox-lite
-          node -e 'const fs=require("fs"); for (const f of ["htdocs/luci-static/resources/view/singbox-lite/status.js","htdocs/luci-static/resources/view/singbox-lite/profiles.js","htdocs/luci-static/resources/view/singbox-lite/editor.js","htdocs/luci-static/resources/view/singbox-lite/log.js"]) new Function(fs.readFileSync(f,"utf8")); JSON.parse(fs.readFileSync("root/usr/share/luci/menu.d/luci-app-singbox-lite.json","utf8")); JSON.parse(fs.readFileSync("root/usr/share/rpcd/acl.d/luci-app-singbox-lite.json","utf8"));'
-
+          sh -n momo/files/momo.init
+          node -e 'const fs=require("fs"); for (const f of fs.readdirSync("luci-app-momo/htdocs/luci-static/resources/view/momo").filter(x=>x.endsWith(".js")).map(x=>"luci-app-momo/htdocs/luci-static/resources/view/momo/"+x).concat(["luci-app-momo/htdocs/luci-static/resources/tools/momo.js"])) new Function(fs.readFileSync(f,"utf8")); JSON.parse(fs.readFileSync("luci-app-momo/root/usr/share/luci/menu.d/luci-app-momo.json","utf8")); JSON.parse(fs.readFileSync("luci-app-momo/root/usr/share/rpcd/acl.d/luci-app-momo.json","utf8"));'
       - name: Download and verify OpenWrt SDK
         run: |
           SDK_URL='https://downloads.openwrt.org/releases/25.12.5/targets/x86/64/openwrt-sdk-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst'
@@ -40,44 +40,41 @@ jobs:
           echo '0c8df0151a1e88feb7c03d694d61f6a18d51872815b7c811d76e2b77504d5e9c  '"$RUNNER_TEMP/openwrt-sdk.tar.zst" | sha256sum --check
           mkdir -p "$RUNNER_TEMP/openwrt-sdk"
           tar --zstd -xf "$RUNNER_TEMP/openwrt-sdk.tar.zst" --strip-components=1 -C "$RUNNER_TEMP/openwrt-sdk"
-
-      - name: Register package and compile
+      - name: Register only Momo packages and compile
         run: |
           SDK_DIR="$RUNNER_TEMP/openwrt-sdk"
-          PACKAGE_NAME="luci-app-singbox-lite"
           LOCAL_FEED_DIR="$RUNNER_TEMP/local-feed"
-          PACKAGE_DIR="$LOCAL_FEED_DIR/$PACKAGE_NAME"
+          mkdir -p "$LOCAL_FEED_DIR"
+          cp -a "$GITHUB_WORKSPACE/momo" "$GITHUB_WORKSPACE/luci-app-momo" "$LOCAL_FEED_DIR/"
           cd "$SDK_DIR"
-          mkdir -p "$PACKAGE_DIR"
-          cp "$GITHUB_WORKSPACE/Makefile" "$GITHUB_WORKSPACE/README.md" "$PACKAGE_DIR/"
-          cp -a "$GITHUB_WORKSPACE/htdocs" "$GITHUB_WORKSPACE/root" "$PACKAGE_DIR/"
           echo "src-link custom $LOCAL_FEED_DIR" >> feeds.conf.default
           ./scripts/feeds update custom
-          if ! grep -q "^Package: $PACKAGE_NAME$" feeds/custom.index; then
-            echo "::error::The SDK feed scanner did not index $PACKAGE_NAME."
-            exit 1
-          fi
-          ./scripts/feeds install -p custom "$PACKAGE_NAME"
-          echo "CONFIG_PACKAGE_$PACKAGE_NAME=m" >> .config
+          for package in momo luci-app-momo; do
+            if ! grep -q "^Package: $package$" feeds/custom.index; then
+              echo "::error::The SDK feed scanner did not index $package."
+              exit 1
+            fi
+          done
+          ./scripts/feeds install -p custom momo luci-app-momo
+          printf '%s\n' 'CONFIG_PACKAGE_momo=m' 'CONFIG_PACKAGE_luci-app-momo=m' >> .config
           make defconfig
-          if ! grep -q "^CONFIG_PACKAGE_$PACKAGE_NAME=m$" .config; then
-            echo "::error::CONFIG_PACKAGE_$PACKAGE_NAME was not generated."
-            grep -n 'singbox-lite' tmp/.config-package.in || true
-            exit 1
-          fi
-          make "package/feeds/custom/$PACKAGE_NAME/compile" V=s
+          for package in momo luci-app-momo; do
+            if ! grep -q "^CONFIG_PACKAGE_$package=m$" .config; then
+              echo "::error::CONFIG_PACKAGE_$package was not generated."
+              exit 1
+            fi
+          done
+          make package/feeds/custom/momo/compile package/feeds/custom/luci-app-momo/compile V=s
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
           shopt -s nullglob
-          APK_FILES=(bin/packages/*/custom/luci-app-singbox-lite*.apk)
-          if (( ${#APK_FILES[@]} == 0 )); then
-            echo "::error::No luci-app-singbox-lite APK was produced."
+          APK_FILES=(bin/packages/*/custom/momo-*.apk bin/packages/*/custom/luci-app-momo-*.apk)
+          if (( ${#APK_FILES[@]} != 2 )); then
+            echo "::error::Expected both momo and luci-app-momo APKs; found ${#APK_FILES[@]}."
             exit 1
           fi
-          mkdir -p "$GITHUB_WORKSPACE/artifacts"
           cp "${APK_FILES[@]}" "$GITHUB_WORKSPACE/artifacts/"
           ls -lh "$GITHUB_WORKSPACE/artifacts"
-
-      - name: Upload APK artifact
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.package-meta.outputs.artifact_name }}

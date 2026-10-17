@@ -1,0 +1,106 @@
+{
+    "luci-app-momo": {
+        "description": "Manage sing-box in core-only mode",
+        "read": {
+            "uci": [
+                "momo"
+            ],
+            "cgi-io": [
+                "download"
+            ],
+            "ubus": {
+                "rc": [
+                    "*"
+                ],
+                "luci.momo": [
+                    "*"
+                ],
+                "file": [
+                    "read",
+                    "list",
+                    "stat"
+                ]
+            },
+            "file": {
+                "/etc/momo/profiles": [
+                    "list"
+                ],
+                "/etc/momo/profiles/*.json": [
+                    "read",
+                    "list"
+                ],
+                "/etc/momo/subscriptions": [
+                    "list"
+                ],
+                "/etc/momo/subscriptions/*.json": [
+                    "read"
+                ],
+                "/etc/momo/run": [
+                    "list"
+                ],
+                "/etc/momo/run/config.json": [
+                    "read"
+                ],
+                "/var/log/momo": [
+                    "list"
+                ],
+                "/var/log/momo/*.log": [
+                    "read"
+                ],
+                "/tmp/log/momo": [
+                    "list"
+                ],
+                "/tmp/log/momo/*.log": [
+                    "read"
+                ]
+            }
+        },
+        "write": {
+            "uci": [
+                "momo"
+            ],
+            "cgi-io": [
+                "upload"
+            ],
+            "ubus": {
+                "rc": [
+                    "*"
+                ],
+                "luci.momo": [
+                    "*"
+                ],
+                "file": [
+                    "write",
+                    "remove"
+                ]
+            },
+            "file": {
+                "/etc/momo/profiles": [
+                    "write",
+                    "remove"
+                ],
+                "/etc/momo/profiles/*.json": [
+                    "write",
+                    "remove"
+                ],
+                "/etc/momo/subscriptions": [
+                    "write",
+                    "remove"
+                ],
+                "/etc/momo/subscriptions/*.json": [
+                    "write",
+                    "remove"
+                ],
+                "/etc/momo/run/config.json": [
+                    "write"
+                ],
+                "/var/log/momo/*.log": [
+                    "write"
+                ],
+                "/tmp/log/momo/*.log": [
+                    "write"
+                ]
+            }
+        }
+    }
+}
