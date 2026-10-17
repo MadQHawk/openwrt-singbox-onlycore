@@ -5,7 +5,7 @@
       "cgi-io": ["download"],
       "uci": ["singbox-lite"],
       "file": {
-        "/etc/sing-box/profiles/": ["list"],
+        "/etc/sing-box/profiles": ["list"],
         "/etc/sing-box/profiles/*": ["read", "list"],
         "/var/log/sing-box-lite.log": ["read"],
         "/var/log/sing-box-lite-core.log": ["read"]
@@ -17,6 +17,7 @@
     "write": {
       "uci": ["singbox-lite"],
       "file": {
+        "/etc/sing-box/profiles": ["write", "remove"],
         "/etc/sing-box/profiles/*": ["write", "remove"],
         "/var/log/sing-box-lite.log": ["write"],
         "/var/log/sing-box-lite-core.log": ["write"],
