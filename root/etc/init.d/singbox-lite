@@ -60,10 +60,12 @@ check() {
 }
 
 update_dashboard() {
-	local config_file controller secret port
+	local config_file controller secret port external_ui
 	config_file="$(selected_profile)" || { log_event 'No valid profile selected for dashboard update'; return 1; }
 	controller="$(jsonfilter -i "$config_file" -e '@.experimental.clash_api.external_controller' 2>/dev/null)"
 	secret="$(jsonfilter -i "$config_file" -e '@.experimental.clash_api.secret' 2>/dev/null)"
+	external_ui="$(jsonfilter -i "$config_file" -e '@.experimental.clash_api.external_ui' 2>/dev/null)"
+	[ -n "$external_ui" ] || { log_event 'Dashboard update requires experimental.clash_api.external_ui'; return 1; }
 	case "$controller" in
 		*:*) port="${controller##*:}" ;;
 		*) log_event 'Dashboard update requires experimental.clash_api.external_controller in the selected profile'; return 1 ;;
@@ -75,9 +77,9 @@ update_dashboard() {
 		return 1
 	fi
 	if [ -n "$secret" ]; then
-		curl --fail --silent --show-error --max-time 30 -X PUT -H "Authorization: Bearer $secret" "http://127.0.0.1:$port/upgrade/ui" >>"$APP_LOG" 2>&1
+		curl --fail --silent --show-error --max-time 30 -X POST -H "Authorization: Bearer $secret" "http://127.0.0.1:$port/upgrade/ui" >>"$APP_LOG" 2>&1
 	else
-		curl --fail --silent --show-error --max-time 30 -X PUT "http://127.0.0.1:$port/upgrade/ui" >>"$APP_LOG" 2>&1
+		curl --fail --silent --show-error --max-time 30 -X POST "http://127.0.0.1:$port/upgrade/ui" >>"$APP_LOG" 2>&1
 	fi
 	local result=$?
 	[ "$result" -eq 0 ] && log_event 'Dashboard update request completed' || log_event "Dashboard update request failed (exit $result)"
