@@ -47,6 +47,7 @@ jobs:
           mkdir -p "$LOCAL_FEED_DIR"
           cp -a "$GITHUB_WORKSPACE/momo" "$GITHUB_WORKSPACE/luci-app-momo" "$LOCAL_FEED_DIR/"
           cd "$SDK_DIR"
+          ./scripts/feeds update luci
           echo "src-link custom $LOCAL_FEED_DIR" >> feeds.conf.default
           ./scripts/feeds update custom
           for package in momo luci-app-momo; do
