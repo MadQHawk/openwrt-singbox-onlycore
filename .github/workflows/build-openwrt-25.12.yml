@@ -28,6 +28,11 @@ jobs:
           PKG_RELEASE="$(sed -n 's/^PKG_RELEASE:=//p' Makefile)"
           echo "artifact_name=luci-app-singbox-lite-openwrt-25.12.5-x86-64-${PKG_VERSION}-r${PKG_RELEASE}" >> "$GITHUB_OUTPUT"
 
+      - name: Check source syntax
+        run: |
+          sh -n root/etc/init.d/singbox-lite
+          node -e 'const fs=require("fs"); for (const f of ["htdocs/luci-static/resources/view/singbox-lite/status.js","htdocs/luci-static/resources/view/singbox-lite/profiles.js","htdocs/luci-static/resources/view/singbox-lite/editor.js","htdocs/luci-static/resources/view/singbox-lite/log.js"]) new Function(fs.readFileSync(f,"utf8")); JSON.parse(fs.readFileSync("root/usr/share/luci/menu.d/luci-app-singbox-lite.json","utf8")); JSON.parse(fs.readFileSync("root/usr/share/rpcd/acl.d/luci-app-singbox-lite.json","utf8"));'
+
       - name: Download and verify OpenWrt SDK
         run: |
           SDK_URL='https://downloads.openwrt.org/releases/25.12.5/targets/x86/64/openwrt-sdk-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst'
