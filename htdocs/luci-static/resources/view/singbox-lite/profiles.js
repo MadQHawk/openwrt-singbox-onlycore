@@ -16,7 +16,7 @@ return view.extend({
 		o.browser = true;
 		o.write = function () { return true; };
 		o.validate = function (section_id, value) {
-			if (!value || !/\.json$/i.test(value))
+			if (value && !/\.json$/i.test(value))
 				return _('仅支持 JSON 配置文件（.json）');
 			return true;
 		};
