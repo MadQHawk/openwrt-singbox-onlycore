@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-singbox-lite
 PKG_VERSION:=0.1.0
-PKG_RELEASE:=3
+PKG_RELEASE:=4
 PKG_LICENSE:=GPL-3.0-only
 
 include $(INCLUDE_DIR)/package.mk
@@ -12,7 +12,7 @@ define Package/luci-app-singbox-lite
   CATEGORY:=LuCI
   TITLE:=Minimal sing-box LuCI Controller
   PKGARCH:=all
-  EXTRA_DEPENDS:=luci-base (>=0),sing-box (>=0)
+  EXTRA_DEPENDS:=luci-base (>=0),sing-box (>=0),curl
 endef
 
 define Package/luci-app-singbox-lite/description
@@ -21,7 +21,7 @@ endef
 
 define Package/luci-app-singbox-lite/postinst
 #!/bin/sh
-[ -n "$$IPKG_INSTROOT" ] || { mkdir -p /etc/sing-box/profiles; touch /var/log/sing-box-lite.log; /etc/init.d/singbox-lite enable; }
+[ -n "$$IPKG_INSTROOT" ] || { mkdir -p /etc/sing-box/profiles; touch /var/log/sing-box-lite.log /var/log/sing-box-lite-core.log; /etc/init.d/singbox-lite enable; }
 exit 0
 endef
 
