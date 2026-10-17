@@ -18,14 +18,22 @@ selected_profile() {
 	config_load singbox-lite
 	config_get config_file main config_file ''
 	case "$config_file" in
-		/etc/sing-box/profiles/*) [ -f "$config_file" ] && { printf '%s\n' "$config_file"; return 0; } ;;
+		/etc/sing-box/profiles/*.json)
+			case "$config_file" in */../*|*/./*) return 1 ;; esac
+			[ -f "$config_file" ] && { printf '%s\n' "$config_file"; return 0; }
+			;;
 	esac
 	return 1
 }
 
-check_profile() {
-	local config_file
-	config_file="$(selected_profile)" || { log_event 'No valid profile selected'; return 1; }
+validate_profile() {
+	local config_file="$1"
+	case "$config_file" in
+		/etc/sing-box/profiles/*.json) ;;
+		*) log_event 'Rejected profile path outside the profiles directory'; return 1 ;;
+	esac
+	case "$config_file" in */../*|*/./*) log_event 'Rejected invalid profile path'; return 1 ;; esac
+	[ -f "$config_file" ] || { log_event "Profile not found: $config_file"; return 1; }
 	[ -x /usr/bin/sing-box ] || { log_event 'sing-box core not installed at /usr/bin/sing-box'; return 1; }
 	{
 		printf '%s Checking configuration: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$config_file"
@@ -36,8 +44,18 @@ check_profile() {
 	return "$result"
 }
 
+check_profile() {
+	local config_file
+	config_file="$(selected_profile)" || { log_event 'No valid profile selected'; return 1; }
+	validate_profile "$config_file"
+}
+
 check() {
-	check_profile
+	if [ -n "$1" ]; then
+		validate_profile "$1"
+	else
+		check_profile
+	fi
 }
 
 update_dashboard() {
@@ -65,9 +83,7 @@ update_dashboard() {
 	return "$result"
 }
 
-dashboard() {
-	update_dashboard
-}
+dashboard() { update_dashboard; }
 
 sync_cron() {
 	local enabled hour
@@ -102,14 +118,15 @@ start_service() {
 	config_get_bool check_config main check_config 1
 	case "$start_delay" in ''|*[!0-9]*) start_delay=0 ;; esac
 	case "$config_file" in
-		/etc/sing-box/profiles/*) ;;
+		/etc/sing-box/profiles/*.json) ;;
 		*) log_event 'Invalid or missing profile path'; return 1 ;;
 	esac
+	case "$config_file" in */../*|*/./*) log_event 'Invalid profile path'; return 1 ;; esac
 	[ -f "$config_file" ] || { log_event "Profile not found: $config_file"; return 1; }
 	[ -x /usr/bin/sing-box ] || { log_event 'sing-box core not installed at /usr/bin/sing-box'; return 1; }
 	sync_cron
 	[ "$start_delay" -eq 0 ] || sleep "$start_delay"
-	if [ "$check_config" = 1 ] && ! check_profile; then
+	if [ "$check_config" = 1 ] && ! validate_profile "$config_file"; then
 		log_event 'Startup blocked because configuration validation failed'
 		return 1
 	fi
