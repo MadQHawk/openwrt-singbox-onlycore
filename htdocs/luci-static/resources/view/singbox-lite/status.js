@@ -49,6 +49,7 @@ return view.extend({
 				var api = config.experimental && config.experimental.clash_api;
 				var controller = api && api.external_controller;
 				if (!controller) throw new Error(_('所选配置未设置 experimental.clash_api.external_controller'));
+				if (!api.external_ui) throw new Error(_('所选配置未设置 external_ui，请先更新面板。'));
 				var match = controller.match(/^(?:\[[0-9a-fA-F:]+\]|[^:]+):(\d+)$/);
 				if (!match) throw new Error(_('无法识别 Clash API 地址'));
 				var host = window.location.hostname;
