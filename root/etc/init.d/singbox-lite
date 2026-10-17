@@ -44,17 +44,18 @@ validate_profile() {
 	return "$result"
 }
 
-check_profile() {
-	local config_file
-	config_file="$(selected_profile)" || { log_event 'No valid profile selected'; return 1; }
-	validate_profile "$config_file"
+version() {
+	[ -x /usr/bin/sing-box ] || return 1
+	/usr/bin/sing-box version
 }
 
 check() {
 	if [ -n "$1" ]; then
 		validate_profile "$1"
 	else
-		check_profile
+		local config_file
+		config_file="$(selected_profile)" || { log_event 'No valid profile selected'; return 1; }
+		validate_profile "$config_file"
 	fi
 }
 
@@ -86,16 +87,17 @@ update_dashboard() {
 dashboard() { update_dashboard; }
 
 sync_cron() {
-	local enabled hour
+	local service_enabled scheduled hour
 	mkdir -p /etc/crontabs
 	touch /etc/crontabs/root
 	sed -i "\|$CRON_MARKER$|d" /etc/crontabs/root
 	config_load singbox-lite
-	config_get_bool enabled main scheduled_restart 0
+	config_get_bool service_enabled main enabled 0
+	config_get_bool scheduled main scheduled_restart 0
 	config_get hour main restart_hour 4
 	case "$hour" in ''|*[!0-9]*) hour=4 ;; esac
 	[ "$hour" -le 23 ] || hour=4
-	if [ "$enabled" = 1 ]; then
+	if [ "$service_enabled" = 1 ] && [ "$scheduled" = 1 ]; then
 		printf '0 %s * * * /etc/init.d/singbox-lite restart %s\n' "$hour" "$CRON_MARKER" >>/etc/crontabs/root
 	fi
 	/etc/init.d/cron reload >/dev/null 2>&1 || /etc/init.d/cron restart >/dev/null 2>&1 || true
