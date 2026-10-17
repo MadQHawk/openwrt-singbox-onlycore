@@ -3,7 +3,6 @@
 'require form';
 'require fs';
 'require uci';
-'require ui';
 
 return view.extend({
 	load: function () {
@@ -13,7 +12,7 @@ return view.extend({
 		]);
 	},
 	render: function (data) {
-		var profiles = (data[1] || []).filter(function (f) { return f.type === 'file' && /\.json$/i.test(f.name); });
+		var profiles = (data[1] || []).filter(function (f) { return f.type === 'file' && /\.json$/i.test(f.name) && f.name.indexOf('/') < 0; });
 		var current = uci.get('singbox-lite', 'main', 'config_file') || '';
 		var m = new form.Map('singbox-lite', _('配置文件编辑器'));
 		var s = m.section(form.NamedSection, 'main', 'singbox');
@@ -29,7 +28,7 @@ return view.extend({
 				'class': 'cbi-input-textarea',
 				'style': 'width:100%;min-height:32em;font-family:monospace;white-space:pre',
 				'wrap': 'off',
-				' spellcheck': 'false'
+				'spellcheck': 'false'
 			});
 			var status = E('span', { 'style': 'margin-left:1em' });
 			var save = E('button', { 'class': 'cbi-button cbi-button-action', 'click': function (ev) {
@@ -38,7 +37,7 @@ return view.extend({
 				try { JSON.parse(textarea.value); }
 				catch (err) { status.textContent = _('JSON 格式错误：') + err.message; return; }
 				fs.write(path, textarea.value).then(function () {
-					return fs.exec('/usr/bin/sing-box', ['check', '-c', path]);
+					return fs.exec('/etc/init.d/singbox-lite', ['check', path]);
 				}).then(function () {
 					status.textContent = _('保存成功，sing-box 配置检查通过。');
 				}).catch(function (err) {
