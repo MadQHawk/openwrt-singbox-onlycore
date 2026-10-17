@@ -3,25 +3,103 @@ USE_PROCD=1
 START=95
 STOP=10
 
+APP_LOG=/var/log/sing-box-lite.log
+CORE_LOG=/var/log/sing-box-lite-core.log
+CRON_MARKER="# singbox-lite scheduled restart"
+
 log_event() {
 	local message="$1"
 	logger -t singbox-lite "$message"
-	printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$message" >>/var/log/sing-box-lite.log
+	printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$message" >>"$APP_LOG"
+}
+
+selected_profile() {
+	local config_file
+	config_load singbox-lite
+	config_get config_file main config_file ''
+	case "$config_file" in
+		/etc/sing-box/profiles/*) [ -f "$config_file" ] && { printf '%s\n' "$config_file"; return 0; } ;;
+	esac
+	return 1
+}
+
+check_profile() {
+	local config_file
+	config_file="$(selected_profile)" || { log_event 'No valid profile selected'; return 1; }
+	[ -x /usr/bin/sing-box ] || { log_event 'sing-box core not installed at /usr/bin/sing-box'; return 1; }
+	{
+		printf '%s Checking configuration: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$config_file"
+		/usr/bin/sing-box check -c "$config_file"
+	} >>"$CORE_LOG" 2>&1
+	local result=$?
+	[ "$result" -eq 0 ] && log_event "Configuration check passed: $config_file" || log_event "Configuration check failed (exit $result); see core log"
+	return "$result"
+}
+
+check() {
+	check_profile
+}
+
+update_dashboard() {
+	local config_file controller secret port
+	config_file="$(selected_profile)" || { log_event 'No valid profile selected for dashboard update'; return 1; }
+	controller="$(jsonfilter -i "$config_file" -e '@.experimental.clash_api.external_controller' 2>/dev/null)"
+	secret="$(jsonfilter -i "$config_file" -e '@.experimental.clash_api.secret' 2>/dev/null)"
+	case "$controller" in
+		*:*) port="${controller##*:}" ;;
+		*) log_event 'Dashboard update requires experimental.clash_api.external_controller in the selected profile'; return 1 ;;
+	esac
+	case "$port" in ''|*[!0-9]*) log_event 'Invalid Clash API port'; return 1 ;; esac
+	[ -n "$secret" ] || secret=''
+	if ! command -v curl >/dev/null 2>&1; then
+		log_event 'curl is required to update the dashboard'
+		return 1
+	fi
+	if [ -n "$secret" ]; then
+		curl --fail --silent --show-error --max-time 30 -X PUT -H "Authorization: Bearer $secret" "http://127.0.0.1:$port/upgrade/ui" >>"$APP_LOG" 2>&1
+	else
+		curl --fail --silent --show-error --max-time 30 -X PUT "http://127.0.0.1:$port/upgrade/ui" >>"$APP_LOG" 2>&1
+	fi
+	local result=$?
+	[ "$result" -eq 0 ] && log_event 'Dashboard update request completed' || log_event "Dashboard update request failed (exit $result)"
+	return "$result"
+}
+
+dashboard() {
+	update_dashboard
+}
+
+sync_cron() {
+	local enabled hour
+	mkdir -p /etc/crontabs
+	touch /etc/crontabs/root
+	sed -i "\|$CRON_MARKER$|d" /etc/crontabs/root
+	config_load singbox-lite
+	config_get_bool enabled main scheduled_restart 0
+	config_get hour main restart_hour 4
+	case "$hour" in ''|*[!0-9]*) hour=4 ;; esac
+	[ "$hour" -le 23 ] || hour=4
+	if [ "$enabled" = 1 ]; then
+		printf '0 %s * * * /etc/init.d/singbox-lite restart %s\n' "$hour" "$CRON_MARKER" >>/etc/crontabs/root
+	fi
+	/etc/init.d/cron reload >/dev/null 2>&1 || /etc/init.d/cron restart >/dev/null 2>&1 || true
 }
 
 boot() {
 	local enabled
 	config_load singbox-lite
 	config_get_bool enabled main enabled 0
+	sync_cron
 	[ "$enabled" = 1 ] || return 0
 	start
 }
 
 start_service() {
-	local config_file start_delay
+	local config_file start_delay check_config
 	config_load singbox-lite
 	config_get config_file main config_file ''
 	config_get start_delay main start_delay 0
+	config_get_bool check_config main check_config 1
 	case "$start_delay" in ''|*[!0-9]*) start_delay=0 ;; esac
 	case "$config_file" in
 		/etc/sing-box/profiles/*) ;;
@@ -29,17 +107,21 @@ start_service() {
 	esac
 	[ -f "$config_file" ] || { log_event "Profile not found: $config_file"; return 1; }
 	[ -x /usr/bin/sing-box ] || { log_event 'sing-box core not installed at /usr/bin/sing-box'; return 1; }
+	sync_cron
 	[ "$start_delay" -eq 0 ] || sleep "$start_delay"
-	if ! /usr/bin/sing-box check -c "$config_file" >>/var/log/sing-box-lite.log 2>&1; then
-		log_event 'Configuration check failed; see sing-box output above'
+	if [ "$check_config" = 1 ] && ! check_profile; then
+		log_event 'Startup blocked because configuration validation failed'
 		return 1
 	fi
+	log_event "Starting sing-box with profile: $config_file"
 	procd_open_instance
-	procd_set_param command /bin/sh -c 'exec /usr/bin/sing-box run -c "$1" >>/var/log/sing-box-lite.log 2>&1' singbox-lite "$config_file"
+	procd_set_param command /bin/sh -c '/usr/bin/sing-box run -c "$1" --disable-color >>/var/log/sing-box-lite-core.log 2>&1; result=$?; logger -t singbox-lite "sing-box exited with status $result"; exit "$result"' singbox-lite "$config_file"
 	procd_set_param respawn 3600 5 5
-	procd_set_param stdout 0
-	procd_set_param stderr 0
 	procd_close_instance
+}
+
+stop_service() {
+	log_event 'Stopping sing-box service'
 }
 
 service_triggers() { procd_add_reload_trigger singbox-lite; }
