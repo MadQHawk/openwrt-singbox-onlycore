@@ -43,6 +43,7 @@ return view.extend({
 				ui.addNotification(null, E('p', _('请先选择配置文件。')), 'warning');
 				return Promise.resolve();
 			}
+			var tab = window.open('about:blank', '_blank');
 			return fs.read_direct(selected).then(function (raw) {
 				var config = JSON.parse(raw);
 				var api = config.experimental && config.experimental.clash_api;
@@ -51,10 +52,11 @@ return view.extend({
 				var match = controller.match(/^(?:\[[0-9a-fA-F:]+\]|[^:]+):(\d+)$/);
 				if (!match) throw new Error(_('无法识别 Clash API 地址'));
 				var host = window.location.hostname;
-				var url = 'http://' + host + ':' + match[1] + '/ui/?hostname=' + encodeURIComponent(host) + '&port=' + encodeURIComponent(match[1]);
+				var url = 'http://' + host + ':' + match[1] + '/ui/?host=' + encodeURIComponent(host) + '&hostname=' + encodeURIComponent(host) + '&port=' + encodeURIComponent(match[1]);
 				if (api.secret) url += '&secret=' + encodeURIComponent(api.secret);
-				window.open(url, '_blank', 'noopener');
-			}).catch(notifyError);
+				if (tab) tab.location = url;
+				else window.location.href = url;
+			}).catch(function (err) { if (tab) tab.close(); notifyError(err); });
 		};
 
 		o = s.option(form.Flag, 'enabled', _('启用')); o.rmempty = false; o.default = '0';
